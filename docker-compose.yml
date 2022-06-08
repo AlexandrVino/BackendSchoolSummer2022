@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: database
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+      - 5433:5433
+    environment:
+      POSTGRES_DB: $DB_NAME
+      POSTGRES_USER: $DB_USER
+      POSTGRES_PASSWORD: $DB_PASS
+    env_file:
+      - ".env"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  adminer:
+    links:
+      - "db:database"
+    container_name: adminer
+    image: adminer
+    restart: always
+    environment:
+      host: $DB_HOST
+    ports:
+      - 8080:8080
+
+
+volumes:
+  db-data:

@@ -370,7 +370,7 @@ components:
           nullable: false
           format: date-time
           example: "2022-05-28T21:12:01.000Z"
-          description: Время обновления добавляемых товаров/категорий.
+          description: Время обновления добавляемых товаров/категорий.ц
     ShopUnitStatisticUnit:
       type: object
       required:

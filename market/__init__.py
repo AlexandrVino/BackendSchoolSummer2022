@@ -11,10 +11,18 @@ __license__ = 'MIT'
 __version__ = '0.0.1'
 
 
+__db_host__ = '172.17.0.0'
+__db_name__ = 'MarketDB'
+__db_pass__ = '123Qwerty123'
+
 __all__ = (
     '__author__',
     '__email__',
     '__license__',
     '__maintainer__',
     '__version__',
+
+    '__db_host__',
+    '__db_name__',
+    '__db_pass__',
 )
