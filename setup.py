@@ -32,12 +32,12 @@ setup(
     license=module.__license__,
     description=module.__doc__,
     long_description=open('README.rst').read(),
-    url='https://github.com/alvassin/backendschool2019',
+    url='https://github.com/AlexandrVino/BackendSchool',
     platforms='all',
     classifiers=[
         'Intended Audience :: Developers',
         'Natural Language :: Russian',
-        'Operating System :: MacOS',
+        'Operating System :: Windows 10',
         'Operating System :: POSIX',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
@@ -46,7 +46,7 @@ setup(
     ],
     python_requires='>=3.10',
     packages=find_packages(exclude=['tests']),
-    install_requires=load_requirements('requirements.txt'),
+    # install_requires=load_requirements('requirements.txt'),
     extras_require={'dev': load_requirements('requirements.dev.txt')},
     entry_points={
         'console_scripts': [
