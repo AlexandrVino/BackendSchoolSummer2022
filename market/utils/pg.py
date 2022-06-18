@@ -1,20 +1,56 @@
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from re import match
 from types import SimpleNamespace
-from typing import Union
+from typing import AsyncIterable, Union
 
+import asyncpg
+from aiohttp.web_app import Application
 from alembic.config import Config
+from asyncpgsa import PG
+from asyncpgsa.transactionmanager import ConnectionTransactionContextManager
 from configargparse import Namespace
+from sqlalchemy import create_engine
+from sqlalchemy.sql import Select
 
 CENSORED = '***'
-DEFAULT_PG_URL = 'postgresql://postgres:123Qwerty123@172.19.0.2:5432/postgres'
+DEFAULT_PG_URL = create_engine('postgresql://postgres:1Ldflblfdxbrf3@localhost:5433/MarketDB')
+
 MAX_QUERY_ARGS = 32767
 MAX_INTEGER = 2147483647
 
 PROJECT_PATH = Path(__file__).parent.parent.resolve()
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class DataBaseData:
+    host: str
+    port: int
+    user: int
+    password: int
+    database: int
+
+    @staticmethod
+    async def get_from_url(url: str):
+        regex = r'postgresql:\/\/\w{1,100}:\w{1,100}@\w{1,100}:\w{1,100}\/\w{1,100}$'
+        if not match(regex, url):
+            raise TypeError('Url should be: postgresql://user:password@host:port/database')
+
+        url_split: list = url[url.find('://') + 3:].split('@')
+
+        user, password = url_split[0].split(':')
+        url_split = url_split[1].split('/')
+        database = url_split[1]
+        host, port = url_split[0].split(':')
+
+        return DataBaseData(host=host, port=port, user=user, password=password, database=database)
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 def make_alembic_config(cmd_opts: Union[Namespace, SimpleNamespace],
@@ -39,3 +75,51 @@ def make_alembic_config(cmd_opts: Union[Namespace, SimpleNamespace],
         config.set_main_option('sqlalchemy.url', cmd_opts.pg_url)
 
     return config
+
+
+async def setup_pg(app: Application, args: Namespace) -> PG:
+    db_info = args.pg_url.with_password(CENSORED)
+    log.info('Connecting to database: %s', db_info)
+
+    db_data = await DataBaseData.get_from_url(str(DEFAULT_PG_URL.url))
+
+    app['pg'] = PG()
+    await app['pg'].init(**db_data.__dict__)
+    await app['pg'].fetchval('SELECT 1')
+
+    log.info('Connected to database %s', db_info)
+
+    try:
+        yield
+    finally:
+        log.info('Disconnecting from database %s', db_info)
+        await app['pg'].pool.close()
+        log.info('Disconnected from database %s', db_info)
+
+
+class SelectQuery(AsyncIterable):
+    """
+    Используется чтобы отправлять данные из PostgreSQL клиенту сразу после
+    получения, по частям, без буфферизации всех данных.
+    """
+    PREFETCH = 1000
+
+    __slots__ = (
+        'query', 'transaction_ctx', 'prefetch', 'timeout'
+    )
+
+    def __init__(self, query: Select,
+                 transaction_ctx: ConnectionTransactionContextManager,
+                 prefetch: int = None,
+                 timeout: float = None):
+        self.query = query
+        self.transaction_ctx = transaction_ctx
+        self.prefetch = prefetch or self.PREFETCH
+        self.timeout = timeout
+
+    async def __aiter__(self):
+        async with self.transaction_ctx as conn:
+            cursor = conn.cursor(self.query, prefetch=self.prefetch,
+                                 timeout=self.timeout)
+            async for row in cursor:
+                yield row

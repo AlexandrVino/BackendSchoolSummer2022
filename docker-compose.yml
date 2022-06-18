@@ -6,14 +6,15 @@ services:
     image: postgres
     restart: always
     ports:
-      - 5432:5432
-      - 5433:5433
-    environment:
-      POSTGRES_DB: $DB_NAME
-      POSTGRES_USER: $DB_USER
-      POSTGRES_PASSWORD: $DB_PASS
+      - "4785:4785"
+
     env_file:
       - ".env"
+    environment:
+      POSTGRES_DB: $DB_NAME
+      POSTGRES_HOST: $DB_HOST
+      POSTGRES_USER: $DB_USER
+      POSTGRES_PASSWORD: $DB_PASS
     volumes:
       - db-data:/var/lib/postgresql/data
 
@@ -31,3 +32,7 @@ services:
 
 volumes:
   db-data:
+
+networks:
+  internet:
+    external: true

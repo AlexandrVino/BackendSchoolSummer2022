@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 from sqlalchemy import (
     Column, Date, Enum as PgEnum, ForeignKey, ForeignKeyConstraint, Integer,
-    MetaData, String, Table,
+    MetaData, String, Table, UniqueConstraint,
 )
 
 convention = {
@@ -24,36 +24,32 @@ class ShopUnitType(Enum):
     offer = 'OFFER'
 
 
-imports_table = Table(
-    'imports',
-    metadata,
-    Column('import_id', Integer, primary_key=True)
-)
-
-citizens_table = Table(
+shop_units_table = Table(
     'shop_units',
     metadata,
-    Column('import_id', Integer, ForeignKey('imports.import_id'), primary_key=True),
-    Column('shop_unit_id', Integer, primary_key=True),
+    Column('shop_unit_id', String, primary_key=True),
     Column('name', String, nullable=False, index=True),
-    Column('date', String, nullable=False),
-    Column('type', PgEnum(ShopUnitType, name='gender'), nullable=False),
+    Column('date', Date, nullable=False),
+    Column('parent_id', String, nullable=True),
+    Column('type', PgEnum(ShopUnitType, name='type'), nullable=False),
     Column('price', Integer, nullable=True),
 )
 
 relations_table = Table(
     'relations',
     metadata,
-    Column('import_id', Integer, primary_key=True),
-    Column('shop_unit_id', Integer, primary_key=True),
-    Column('parent_id', Integer, primary_key=True),
-    Column('children_id', Integer, primary_key=True),
-    ForeignKeyConstraint(
-        ('import_id', 'shop_unit_id'),
-        ('shop_units.import_id', 'shop_units.citizen_id')
-    ),
-    ForeignKeyConstraint(
-        ('import_id', 'shop_unit_id'),
-        ('shop_units.import_id', 'shop_units.citizen_id')
-    ),
+    Column('relation_id', String, primary_key=True),
+    Column('children_id', String, primary_key=True),
+
+    UniqueConstraint('relation_id', 'children_id', name='uix_1')
 )
+
+history_table = Table(
+    'history',
+    metadata,
+
+    Column('shop_unit_id', String, primary_key=True),
+    Column('update_date', Date, nullable=False),
+    Column('price', Integer, nullable=False),
+)
+
