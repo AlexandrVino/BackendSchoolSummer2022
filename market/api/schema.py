@@ -147,6 +147,8 @@ async def get_item_tree(root_id, pg: PG):
     sql_request = SQL_REQUESTS['get_item_tree'].format(root_id)
 
     ides = await pg.fetch(sql_request)
+    if not ides:
+        return None, None
     ides_to_req = {root_id}
 
     for record in ides:
@@ -201,12 +203,10 @@ async def get_total_price(tree):
 
 
 async def edit_json_to_answer(data: dict) -> dict:
-    string = (
+    return json.loads(
         json.dumps(data, ensure_ascii=False).replace('category', 'CATEGORY').replace('offer', 'OFFER')
         .replace('shop_unit_id', 'id').replace('parent_id', 'parentId')
     )
-
-    return json.loads(string)
 
 
 async def update_parent_branch_date(children_id, pg: PG, update_date):
@@ -216,8 +216,8 @@ async def update_parent_branch_date(children_id, pg: PG, update_date):
     ides_to_req = set()
 
     for record in ides:
-        parent_id, children_id = record.get('relation_id'), record.get('children_id')
-        ides_to_req.update((parent_id, children_id))
+        ides_to_req.update((record.get('relation_id'), record.get('children_id')))
+
     sql_request = SQL_REQUESTS['update_date'].format(update_date, tuple(ides_to_req))
 
     await pg.execute(sql_request)

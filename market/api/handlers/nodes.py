@@ -17,13 +17,5 @@ class NodeView(BaseImportView):
     @request_schema(GetShopUnitSchema())
     @response_schema(GetShopUnitResponseSchema(), code=HTTPStatus.OK.value)
     async def get(self):
-
-        select_query = select(shop_units_table).where(shop_units_table.c.shop_unit_id == self.shop_unit_id)
-        shop_unit = await self.get_obj(select_query)
-
-        if not shop_unit:
-            raise HTTPNotFound()
-
-        shop_unit = await self.get_obj_tree(shop_unit)
-
+        shop_unit = await self.get_obj_tree()
         return Response(body=shop_unit)
