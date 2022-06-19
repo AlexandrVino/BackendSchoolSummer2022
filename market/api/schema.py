@@ -32,6 +32,7 @@ SQL_REQUESTS = {
         FROM shop_units 
         WHERE shop_units.shop_unit_id IN {}''',
     'delete_by_ides': '''
+    DELETE FROM public.history WHERE shop_unit_id IN {};
     DELETE FROM public.shop_units WHERE shop_unit_id IN {};
     DELETE FROM public.relations WHERE children_id IN {} OR relation_id IN {};''',
     'get_item_tree': '''

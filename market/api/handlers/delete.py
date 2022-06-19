@@ -16,7 +16,8 @@ class DeleteView(BaseImportView):
     async def delete(self):
         ides_to_req, _ = await get_item_tree(self.shop_unit_id, self.pg)
         ides_to_req = tuple(ides_to_req)
-        sql_request = SQL_REQUESTS['delete_by_ides'].format(ides_to_req, ides_to_req, ides_to_req)
+        sql_request = SQL_REQUESTS['delete_by_ides'].format(
+            ides_to_req, ides_to_req, ides_to_req, ides_to_req).replace(',)', ')')
         await self.pg.execute(sql_request)
 
         return Response(status=HTTPStatus.OK)
