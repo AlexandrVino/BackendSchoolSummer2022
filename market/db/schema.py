@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 from sqlalchemy import (
     Column, Date, Enum as PgEnum, ForeignKey, ForeignKeyConstraint, Integer,
-    MetaData, String, Table, UniqueConstraint,
+    MetaData, String, Table, UniqueConstraint, DateTime
 )
 
 convention = {
@@ -29,7 +29,7 @@ shop_units_table = Table(
     metadata,
     Column('shop_unit_id', String, primary_key=True),
     Column('name', String, nullable=False, index=True),
-    Column('date', Date, nullable=False),
+    Column('date', DateTime, nullable=False),
     Column('parent_id', String, nullable=True),
     Column('type', PgEnum(ShopUnitType, name='type'), nullable=False),
     Column('price', Integer, nullable=True),
@@ -48,8 +48,8 @@ history_table = Table(
     'history',
     metadata,
 
-    Column('shop_unit_id', String, primary_key=True),
-    Column('update_date', Date, nullable=False),
+    Column('shop_unit_id', String, nullable=False),
+    Column('update_date', DateTime, nullable=False),
     Column('price', Integer, nullable=False),
 )
 

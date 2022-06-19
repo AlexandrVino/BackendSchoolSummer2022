@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from http import HTTPStatus
 from typing import Generator
 
@@ -6,11 +7,14 @@ from aiohttp.web_response import Response
 from aiohttp_apispec import docs, request_schema, response_schema
 from aiomisc import chunk_list
 from asyncpg import UniqueViolationError
-from sqlalchemy import select, Table, update
+from sqlalchemy import case, select, Table, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import Insert
 
-from market.api.schema import ImportResponseSchema, ImportSchema, update_parent_branch_date
+from market.api.schema import add_history, get_update_rows_request, ImportResponseSchema, ImportSchema, SQL_REQUESTS, \
+    str_to_datetime, \
+    update_parent_branch_date
 from market.db.schema import shop_units_table, relations_table
 from market.utils.pg import MAX_QUERY_ARGS
 
@@ -32,9 +36,10 @@ class ImportsView(BaseView):
     MAX_RELATIONS_PER_INSERT = MAX_QUERY_ARGS // len(relations_table.columns)
     all_insert_data = None
     need_to_update_date = None
+    need_to_add_history = None
 
     @classmethod
-    def make_shop_units_table_rows(cls, shop_units, date) -> Generator:
+    def make_shop_units_table_rows(cls, shop_units, date: str) -> Generator:
         """
         Генерирует данные готовые для вставки в таблицу citizens (с ключом
         import_id и без ключа relatives).
@@ -43,7 +48,7 @@ class ImportsView(BaseView):
             yield {
                 'shop_unit_id': shop_unit['id'],
                 'name': shop_unit['name'],
-                'date': date,
+                'date': str_to_datetime(date),
                 'type': shop_unit['type'].lower(),
                 'parent_id': shop_unit.get('parentId'),
                 'price': shop_unit.get('price'),
@@ -62,7 +67,8 @@ class ImportsView(BaseView):
                 'relation_id': shop_unit['parentId'],
             }
 
-    async def add_relatives(self, conn, chunk):
+    @staticmethod
+    async def add_relatives(conn, chunk):
         try:
             query = relations_table.insert()
             query.parameters = chunk[0].values()
@@ -70,41 +76,64 @@ class ImportsView(BaseView):
         except UniqueViolationError:
             pass
 
-    async def update_or_create(self, conn, query: Query, chunk: list[dict], table: Table):
+    async def update_or_create(self, conn, chunk: list[dict]):
         """
-        Метод, который добавляет/измеяет объект в бд
+        Метод, который добавляет/изменяет объект в бд
         """
 
-        data = chunk[0]
+        parents = set()
+        all_objects = set()
 
-        if self.all_insert_data.get(data['shop_unit_id']) is None:
-            self.all_insert_data[data['shop_unit_id']] = data.copy()
+        for data in chunk:
+            if data.get('parent_id'):
+                parents.add(data.get('parent_id'))
+            all_objects.add(data.get('shop_unit_id'))
 
-        select_query = select(table)
-        obj = await self.get_obj(select_query.where(table.c.shop_unit_id == data['shop_unit_id']))
+        # проверяем, что родитель есть в бд и что его тип == 'category'
+        if parents:
+            parents = {
+                record is not None and record.get('type').lower() == 'category'
+                for record in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(parents)).replace(',)', ')'))
+            }
+            assert all(parents), 'Validation failed'
 
-        if obj is None:
-            await conn.execute(query.values(list(chunk)))
+        # объекты, которые уже есть в бд, надо обновить, другие - добавить
+        nullable_objects = []
+        exist_objects = {
+            record.get('shop_unit_id'): dict(record)
+            for record in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(all_objects)).replace(',)', ')'))
+            if record
+        }
 
-        else:
-            assert obj.get('type') == data[
-                'type'].lower(), f"Incorrect obj with id {data['shop_unit_id']} type in request"
+        for data in chunk:
 
-            query = table.update().values(**data).where(table.c.shop_unit_id == data['shop_unit_id'])
-            query.parameters = data.values()
-            await conn.execute(query)
+            # т.к. при изменении/добавлении товара необходимо менять всю родительскую ветку (дату и цену)
+            # добавляю в 2 списка:
+            # первый для установления даты на дату последнего измененного объекта
+            # второй для добавления записи в таблицу истории изменений (статистики)
 
-        parent = self.all_insert_data.get(data.get('parent_id'))
+            if data.get('parent_id'):
+                self.need_to_update_date.append((data['shop_unit_id'], data['date']))
+            if data.get('type').lower() == 'offer':
+                self.need_to_add_history.append((data['shop_unit_id'], data['date']))
 
-        if not parent and data.get('parent_id'):
-            parent = await self.get_obj(select_query.where(table.c.shop_unit_id == data.get('parent_id')))
-            if parent:
-                self.all_insert_data[data.get('parent_id')] = parent
+            if exist_objects.get(data.get('shop_unit_id')) is None:
+                nullable_objects.append(data)
+            else:
+                exist_objects[data.get('shop_unit_id')] = data
 
-        assert not parent and not data.get('parent_id') or parent.get('type') == 'category', 'Validation failed'
+        # добавляем объекты, которых еще нет в бд
 
-        if parent:
-            self.need_to_update_date.append((data['shop_unit_id'], data['date']))
+        update_query = await get_update_rows_request(exist_objects)
+
+        if nullable_objects:
+            insert_query = shop_units_table.insert(values=nullable_objects)
+            insert_query.parameters = []
+
+            await conn.execute(insert_query)
+
+        if update_query:
+            await conn.execute(update_query)
 
     @docs(summary='Добавить выгрузку с информацией о товарах/категориях')
     @request_schema(ImportSchema())
@@ -113,6 +142,7 @@ class ImportsView(BaseView):
 
         self.all_insert_data = {}
         self.need_to_update_date = []
+        self.need_to_add_history = []
 
         async with self.pg.transaction() as conn:
 
@@ -132,16 +162,15 @@ class ImportsView(BaseView):
 
             await validate_all_items(chunked_shop_unit_rows)
 
-            shop_units_query = shop_units_table.insert()
-
             for chunk in chunked_shop_unit_rows:
-                shop_units_query.parameters = chunk[0].values()
-                await self.update_or_create(conn, shop_units_query, chunk, shop_units_table)
+                await self.update_or_create(conn, chunk)
 
             for chunk in relations_rows:
                 await self.add_relatives(conn, chunk)
 
         for children_id, date in self.need_to_update_date:
             await update_parent_branch_date(children_id, self.pg, date)
+        for children_id, date in self.need_to_add_history:
+            await add_history(children_id, self.pg, date)
 
         return Response(status=HTTPStatus.OK)

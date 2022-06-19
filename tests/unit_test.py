@@ -272,11 +272,11 @@ def test_delete():
 
 
 def test_all():
+    # test_delete()
     test_import()
     test_nodes()
     # test_sales()
     # test_stats()
-    # test_delete()
 
 
 def main():
