@@ -19,9 +19,9 @@ from marshmallow.fields import Dict, Int, Nested, Str
 from marshmallow.validate import Length
 from sqlalchemy.dialects.postgresql import insert
 
-from api.validators import validate_all_items
-from db.schema import history_table
-from utils.pg import MAX_QUERY_ARGS
+from market.api.validators import validate_all_items
+from market.db.schema import history_table
+from market.utils.pg import MAX_QUERY_ARGS
 
 BIRTH_DATE_FORMAT = '%d.%m.%Y'
 

@@ -1,5 +1,4 @@
 import json
-from datetime import date
 from decimal import Decimal
 from functools import partial, singledispatch
 from typing import Any
@@ -7,8 +6,6 @@ from typing import Any
 from aiohttp.payload import JsonPayload as BaseJsonPayload, Payload
 from aiohttp.typedefs import JSONEncoder
 from asyncpg import Record
-
-from market.api.schema import BIRTH_DATE_FORMAT
 
 
 @singledispatch

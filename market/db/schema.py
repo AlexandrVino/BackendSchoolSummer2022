@@ -1,9 +1,6 @@
 from enum import Enum, unique
 
-from sqlalchemy import (
-    Column, Date, Enum as PgEnum, ForeignKey, ForeignKeyConstraint, Integer,
-    MetaData, String, Table, UniqueConstraint, DateTime
-)
+from sqlalchemy import (Column, DateTime, Enum as PgEnum, Integer, MetaData, String, Table, UniqueConstraint)
 
 convention = {
     'all_column_names': lambda constraint, table: '_'.join([

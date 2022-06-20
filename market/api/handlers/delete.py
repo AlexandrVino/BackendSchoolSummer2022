@@ -5,7 +5,7 @@ from aiohttp.web_response import Response
 from aiohttp_apispec import docs
 
 from market.api.schema import get_item_tree, SQL_REQUESTS
-from .base import BaseImportView
+from market.api.handlers.base import BaseImportView
 
 
 class DeleteView(BaseImportView):

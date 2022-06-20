@@ -5,9 +5,9 @@ from aiohttp.web_response import Response
 from aiohttp_apispec import docs
 from sqlalchemy import and_, select
 
-from db.schema import history_table, shop_units_table
+from market.db.schema import history_table, shop_units_table
 from market.api.schema import datetime_to_str, edit_json_to_answer, str_to_datetime
-from .base import BaseImportView
+from market.api.handlers.base import BaseImportView
 
 
 class StatsView(BaseImportView):

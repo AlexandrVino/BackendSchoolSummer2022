@@ -1,6 +1,10 @@
 import os
 from sys import argv
 
+from market.api.app import create_app, MAX_REQUEST_SIZE
+from market.utils.argparse import clear_environ, positive_int
+from market.utils.pg import DEFAULT_PG_URL
+
 from aiohttp.web import run_app
 from aiomisc import bind_socket
 from aiomisc.log import basic_config, LogFormat
@@ -8,9 +12,6 @@ from configargparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from setproctitle import setproctitle
 from yarl import URL
 
-from api.app import create_app, MAX_REQUEST_SIZE
-from market.utils.argparse import clear_environ, positive_int
-from utils.pg import DEFAULT_PG_URL
 
 ENV_VAR_PREFIX = 'MARKET_'
 
@@ -46,7 +47,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--pg-pool-max-size', type=int, default=MAX_REQUEST_SIZE * 10,
+    '--pg-pool-max-size', type=int, default=MAX_REQUEST_SIZE,
     help='Password to use to connect to the database'
 )
 

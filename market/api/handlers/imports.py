@@ -11,8 +11,8 @@ from sqlalchemy.dialects.postgresql import insert
 from market.api.schema import add_history, ImportSchema, SQL_REQUESTS, str_to_datetime, update_parent_branch_date
 from market.db.schema import relations_table, shop_units_table
 from market.utils.pg import MAX_QUERY_ARGS
-from .base import BaseView
-from ..validators import validate_all_items
+from market.api.handlers.base import BaseView
+from market.api.validators import validate_all_items
 
 log = logging.getLogger(__name__)
 

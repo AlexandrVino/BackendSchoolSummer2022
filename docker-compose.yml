@@ -29,6 +29,20 @@ services:
     ports:
       - 8080:8080
 
+  api-server:
+    links:
+      - "db:database"
+    container_name: api-server
+    build:
+      context: .
+    restart: always
+    env_file:
+      - ".env"
+    depends_on:
+      - db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
 
 volumes:
   db-data:

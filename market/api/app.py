@@ -8,8 +8,8 @@ from aiohttp.web_app import Application
 from aiohttp_apispec import setup_aiohttp_apispec
 from configargparse import Namespace
 
-from api.handlers import HANDLERS
-from api.payloads import AsyncGenJSONListPayload, JsonPayload
+from market.api.handlers import HANDLERS
+from market.api.payloads import AsyncGenJSONListPayload, JsonPayload
 from market.utils.pg import setup_pg
 
 MEGABYTE = 1024 ** 2
