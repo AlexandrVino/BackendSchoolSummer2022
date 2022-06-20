@@ -1,7 +1,7 @@
 from typing import Generator
 
 
-async def validate_category(kwargs):
+def validate_category(kwargs):
     keys = [
         ('shop_unit_id', (1,)), ('name', (1,)), ('date', (1,)), ('parentId', (0, 1)), ('type', (1,)), ('price', (0,))
     ]
@@ -9,7 +9,7 @@ async def validate_category(kwargs):
         assert bool(kwargs.get(key)) in value, 'Validation failed'
 
 
-async def validate_product(kwargs):
+def validate_product(kwargs):
     keys = [
         ('shop_unit_id', (1,)), ('name', (1,)), ('date', (1,)), ('parentId', (0, 1)), ('type', (1,)), ('price', (1,))
     ]
@@ -17,11 +17,11 @@ async def validate_product(kwargs):
         assert bool(kwargs.get(key)) in value, 'Validation failed'
 
 
-async def validate_all_items(items: iter):
+def validate_all_items(items: iter):
     funcs = {
         'category': validate_category,
         'offer': validate_product,
     }
 
     for item in items:
-        await funcs[item[0]['type']](item[0])
+        funcs[item[0]['type']](item[0])

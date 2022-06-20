@@ -52,5 +52,5 @@ history_table = Table(
     Column('update_date', DateTime, nullable=False),
     Column('price', Integer, nullable=False),
 
-    UniqueConstraint('shop_unit_id', 'update_date', 'price', name='uix_2')
+    UniqueConstraint('shop_unit_id', 'update_date', name='uix_2')
 )

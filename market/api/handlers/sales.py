@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta
-from urllib.parse import parse_qs, urlparse, unquote
+from datetime import timedelta
+from urllib.parse import parse_qs, unquote, urlparse
 
 from aiohttp.web_response import Response
-from aiohttp_apispec import docs, response_schema
+from aiohttp_apispec import docs
 from sqlalchemy import and_, select
 
 from db.schema import history_table, shop_units_table
-from market.api.schema import datetime_to_str, edit_json_to_answer, ShopUnitResponseSchema, str_to_datetime
+from market.api.schema import datetime_to_str, edit_json_to_answer, str_to_datetime
 from .base import BaseImportView
 
 
@@ -14,7 +14,6 @@ class SalesView(BaseImportView):
     URL_PATH = r'/sales'
 
     @docs(summary='Отобразить товары со скидкой')
-    @response_schema(ShopUnitResponseSchema())
     async def get(self):
         date = str_to_datetime(parse_qs(urlparse(unquote(str(self.request.url))).query)['date'][0])
         sql_request = shop_units_table.select().where(

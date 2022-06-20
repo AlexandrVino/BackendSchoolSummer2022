@@ -19,6 +19,7 @@ from marshmallow.fields import Dict, Int, Nested, Str
 from marshmallow.validate import Length, Range
 from sqlalchemy.dialects.postgresql import insert
 
+from api.validators import validate_all_items
 from db.schema import history_table, shop_units_table
 from utils.pg import MAX_QUERY_ARGS
 
@@ -71,12 +72,13 @@ SQL_REQUESTS = {
 }
 
 
-class GetShopUnitSchema(Schema):
-    shop_unit_id = Str(validate=Length(min=1, max=256))
-
-
-class ShopUnitSchema(GetShopUnitSchema):
-    shop_unit_id = Str(validate=Length(min=1, max=256))
+class ShopUnitSchema(Schema):
+    id = Str(validate=Length(min=1, max=256))
+    name = Str(validate=Length(min=1, max=256))
+    date = Str(validate=Length(min=1, max=256))
+    parentId = Str(validate=Length(min=1, max=256))
+    type = Str(validate=Length(min=1, max=256))
+    price = Int()
 
 
 class ImportSchema(Schema):
@@ -87,72 +89,20 @@ class ImportSchema(Schema):
     @validates_schema
     def validate_unique_shop_unit_id(self, data, **_):
         shop_unit_ids = set()
-        for shop_unit in data['shop_units']:
+        validate_all_items(data['items'])
+
+        for shop_unit in data['items']:
             if shop_unit['shop_unit_id'] in shop_unit_ids:
                 raise ValidationError(
                     'shop_unit_id %r is not unique' % shop_unit['shop_unit_id']
                 )
             shop_unit_ids.add(shop_unit['shop_unit_id'])
 
-    @validates_schema
-    def validate_relatives(self, data, **_):
-        children = {
-            shop_unit['shop_unit_id']: set(shop_unit['shop_unit_id'])
-            for shop_unit in data['shop_units']
-        }
-
-        for shop_unit_id, children_ids in children.items():
-            for children_id in children_ids:
-                if shop_unit_id not in children.get(children_id, set()):
-                    raise ValidationError(
-                        f'shop_unit {children_id} does not have children with {shop_unit_id}'
-                    )
-
-
-class ImportIdSchema(Schema):
-    import_id = Int(strict=True, required=True)
-
-
-class ImportResponseSchema(Schema):
-    data = Nested(ImportIdSchema(), required=True)
-
-
-class ShopUnitResponseSchema(Schema):
-    data = Nested(ShopUnitSchema(many=True), required=True)
-
-
-class GetShopUnitResponseSchema(Schema):
-    data = Nested(ShopUnitSchema(), required=True)
-
-
-class StatisticSchema(Schema):
-    citizen_id = Int(validate=Range(min=0), strict=True, required=True)
-    presents = Int(validate=Range(min=0), strict=True, required=True)
-
-
-# Схема, содержащая кол-во подарков, которое купят жители по месяцам.
-# Чтобы не указывать вручную 12 полей класс можно сгенерировать.
-ShopUnitStatisticByMonthSchema = type(
-    'ShopUnitStatisticByMonthSchema', (Schema,),
-    {
-        str(i): Nested(StatisticSchema(many=True), required=True)
-        for i in range(1, 13)
-    }
-)
-
-
-class ShopUnitStatisticResponseSchema(Schema):
-    data = Nested(ShopUnitStatisticByMonthSchema(), required=True)
-
 
 class ErrorSchema(Schema):
     code = Str(required=True)
     message = Str(required=True)
     fields = Dict()
-
-
-class ErrorResponseSchema(Schema):
-    error = Nested(ErrorSchema(), required=True)
 
 
 async def get_item_tree(root_id, pg: PG):
@@ -290,8 +240,8 @@ async def add_history(children_id, pg, update_date, main_parents_trees):
 
         main_parents_trees[main_parent_id] = [main_parent_tree, prices]
 
-        sql_request = insert(history_table).on_conflict_do_update(
-            index_elements=['shop_unit_id', 'update_date', 'price'], set_=history_table.columns
+        sql_request = insert(history_table).on_conflict_do_nothing(
+            index_elements=['shop_unit_id', 'update_date']
         )
         sql_request.parameters = []
 

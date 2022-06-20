@@ -91,6 +91,22 @@ IMPORT_BATCHES = [
     }
 ]
 
+INCORRECT_IMPORT_BATCHES = [
+
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
+                "parentId": '863e1a7a-1304-42ae-943b-179184c077e3',
+                "children": []
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+]
+
 EXPECTED_TREE = {
     "type": "CATEGORY",
     "name": "Товары",
@@ -243,6 +259,16 @@ def deep_sort_children(node):
             deep_sort_children(child)
 
 
+def sort_stats(node):
+    if node.get("stats"):
+        node["stats"].sort(key=lambda x: x["update_date"])
+
+
+def sort_sales(node):
+    if node.get("sales"):
+        node["sales"].sort(key=lambda x: x["id"])
+
+
 def print_diff(expected, response):
     with open("expected.json", "w") as f:
         json.dump(expected, f, indent=4, ensure_ascii=False, sort_keys=True)
@@ -263,6 +289,12 @@ def test_import():
 
         assert status == 200, f"Expected HTTP status code 200, got {status}"
 
+    for index, batch in enumerate(INCORRECT_IMPORT_BATCHES):
+        print(f"Incorrect importing batch {index}")
+        status, _ = request("/imports", method="POST", data=batch)
+
+        assert status == 400, f"Expected HTTP status code 400, got {status}"
+
     print("Test import passed.")
 
 
@@ -279,6 +311,10 @@ def test_nodes():
         print("Response tree doesn't match expected tree.")
         sys.exit(1)
 
+    # мой тест на заведомо неверный id
+    status, response = request("/nodes/bla_bla_bla", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
     print("Test nodes passed.")
 
 
@@ -288,6 +324,9 @@ def test_sales():
     })
     status, response = request(f"/sales?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    sort_sales(response)
+    sort_sales(SALES_EXAMPLE)
 
     if response != SALES_EXAMPLE:
         print_diff(SALES_EXAMPLE, response)
@@ -304,6 +343,9 @@ def test_stats():
     })
     status, response = request(f"/node/{ROOT_ID}/statistic?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    sort_stats(response)
+    sort_stats(STATS_EXAMPLE)
 
     if response != STATS_EXAMPLE:
         print_diff(STATS_EXAMPLE, response)
@@ -324,9 +366,9 @@ def test_delete():
 
 
 def test_all():
-    # test_delete()
-    # test_import()
-    # test_nodes()
+    test_delete()
+    test_import()
+    test_nodes()
     test_sales()
     test_stats()
 
