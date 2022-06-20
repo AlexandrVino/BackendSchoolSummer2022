@@ -12,7 +12,12 @@ class DeleteView(BaseImportView):
     URL_PATH = r'/delete/{shop_unit_id:[\w, -]+}'
 
     @docs(summary='Получить объект со всеми дочерними')
-    async def delete(self):
+    async def delete(self) -> Response:
+        """
+        :return: Response
+        Метод удаления элемента с каким-либо id из всех таблиц
+        """
+
         ides_to_req, _ = await get_item_tree(self.shop_unit_id, self.pg)
         if not ides_to_req:
             raise HTTPNotFound()

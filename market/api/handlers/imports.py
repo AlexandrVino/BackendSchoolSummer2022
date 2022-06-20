@@ -5,7 +5,7 @@ from typing import Generator
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, request_schema
 from aiomisc import chunk_list
-from asyncpg import UniqueViolationError
+from asyncpg import Connection, UniqueViolationError
 from sqlalchemy.dialects.postgresql import insert
 
 from market.api.schema import add_history, ImportSchema, SQL_REQUESTS, str_to_datetime, update_parent_branch_date
@@ -32,11 +32,15 @@ class ImportsView(BaseView):
     need_to_add_history = None
 
     @classmethod
-    def make_shop_units_table_rows(cls, shop_units, date: str) -> Generator:
+    def make_shop_units_table_rows(cls, shop_units: list[dict], date: str) -> Generator:
         """
-        Генерирует данные готовые для вставки в таблицу citizens (с ключом
-        import_id и без ключа relatives).
+        :param shop_units: список элементов для вставки
+        :param date: дата обновления
+        :return: Generator
+
+        Метод, который генерирует данные готовые для вставки в таблицу shop_units
         """
+
         for shop_unit in shop_units:
             yield {
                 'shop_unit_id': shop_unit['id'],
@@ -48,11 +52,15 @@ class ImportsView(BaseView):
             }
 
     @classmethod
-    def make_relations_table_rows(cls, shop_units) -> Generator:
+    def make_relations_table_rows(cls, relations: list[dict]) -> Generator:
         """
-        Генерирует данные готовые для вставки в таблицу relations.
+        :param relations: список словарей для вставки
+        :return: Generator
+
+        Метод, который генерирует данные готовые для вставки в таблицу relations
         """
-        for shop_unit in shop_units:
+
+        for shop_unit in relations:
             if not shop_unit.get('parentId'):
                 continue
             yield {
@@ -61,17 +69,27 @@ class ImportsView(BaseView):
             }
 
     @staticmethod
-    async def add_relatives(conn, chunk):
-        try:
-            query = relations_table.insert()
-            query.parameters = chunk[0].values()
-            await conn.execute(query.values(list(chunk)))
-        except UniqueViolationError:
-            pass
-
-    async def update_or_create(self, conn, chunk: list[dict]):
+    async def add_relatives(conn: Connection, chunk: list[dict]) -> None:
         """
-        Метод, который добавляет/изменяет объект в бд
+        :param conn: объект коннекта к бд
+        :param chunk список элементов для вставки
+        :return: None
+
+        Метод, который вставляет данные в таблицу relations
+        """
+
+        query = insert(relations_table).on_conflict_do_nothing(index_elements=['relation_id', 'children_id'])
+        query.parameters = []
+
+        await conn.execute(query.values(list(chunk)))
+
+    async def update_or_create(self, conn: Connection, chunk: list[dict]):
+        """
+        :param conn: объект коннекта к бд
+        :param chunk список элементов для вставки
+        :return: None
+
+        Метод, который вставляет данные в таблицу shop_units
         """
 
         parents = set()
@@ -113,8 +131,11 @@ class ImportsView(BaseView):
 
     @docs(summary='Добавить выгрузку с информацией о товарах/категориях')
     @request_schema(ImportSchema())
-    async def post(self):
-
+    async def post(self) -> Response:
+        """
+        :return: Response
+        Метод добавления/изменения элемента (ов)
+        """
         try:
             self.all_insert_data = {}
             self.need_to_update_date = []

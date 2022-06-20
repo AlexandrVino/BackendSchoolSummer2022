@@ -1,7 +1,11 @@
-from typing import Generator
-
-
 def validate_category(kwargs):
+    """
+    :param kwargs: словарь
+    :return: None
+
+    Функция проверки категорий на валидность
+    """
+
     keys = [
         ('shop_unit_id', (1,)), ('name', (1,)), ('date', (1,)), ('parentId', (0, 1)), ('type', (1,)), ('price', (0,))
     ]
@@ -10,6 +14,13 @@ def validate_category(kwargs):
 
 
 def validate_product(kwargs):
+    """
+    :param kwargs: словарь
+    :return: None
+
+    Функция проверки товаров на валидность
+    """
+
     keys = [
         ('shop_unit_id', (1,)), ('name', (1,)), ('date', (1,)), ('parentId', (0, 1)), ('type', (1,)), ('price', (1,))
     ]
@@ -18,6 +29,13 @@ def validate_product(kwargs):
 
 
 def validate_all_items(items: iter):
+    """
+    :param items: iter-объект
+    :return: None
+
+    Функция проверки категорий и товаров на валидность
+    """
+
     funcs = {
         'category': validate_category,
         'offer': validate_product,

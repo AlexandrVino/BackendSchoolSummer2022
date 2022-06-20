@@ -16,18 +16,18 @@ from asyncpg import Record
 from asyncpgsa import PG
 from marshmallow import Schema, validates_schema, ValidationError
 from marshmallow.fields import Dict, Int, Nested, Str
-from marshmallow.validate import Length, Range
+from marshmallow.validate import Length
 from sqlalchemy.dialects.postgresql import insert
 
 from api.validators import validate_all_items
-from db.schema import history_table, shop_units_table
+from db.schema import history_table
 from utils.pg import MAX_QUERY_ARGS
 
 BIRTH_DATE_FORMAT = '%d.%m.%Y'
 
 ''' 
 Пишу ручками некоторые запросы т.к. 
-1) либо sqlalchemy генерит что-то а потом на это и ругается, (при использовании метода "_in" )
+1) либо sqlalchemy генерит что-то а потом на это и ругается, (при использовании Функции "_in" )
 2) либо это обновление множества записей сразу (не нагуглил нормальное решение :/ )
 3) либо это рекурсивный запрос, который легче написать ручками
 '''
@@ -65,10 +65,6 @@ SQL_REQUESTS = {
     UPDATE shop_units 
     SET date = '{}'
     WHERE shop_units.shop_unit_id IN {}''',
-    'add_history': '''INSERT INTO history (shop_unit_id, update_date, price) VALUES ('{}', '{}', {});''',
-    'update_shop_unit': '''UPDATE shop_units 
-    SET name = '{name}', date = '{date}', parent_id = '{parent_id}', type = '{type}', price = {price}
-    WHERE shop_units.shop_unit_id = '{shop_unit_id}';'''
 }
 
 
@@ -105,43 +101,71 @@ class ErrorSchema(Schema):
     fields = Dict()
 
 
-async def get_item_tree(root_id, pg: PG):
+async def get_item_tree(root_id, pg: PG) -> tuple[set[str], list[Record]] | tuple[None, None]:
+    """
+    :param root_id: id корневого элемента дерева
+    :param pg: PG объект коннекта к базе данных
+    :return:
+    """
+
     sql_request = SQL_REQUESTS['get_item_tree'].format(root_id)
 
     ides = await pg.fetch(sql_request)
+
     if not ides:
         return None, None
+
     ides_to_req = {root_id}
 
     for record in ides:
-        parent_id, children_id = record.get('relation_id'), record.get('children_id')
-        ides_to_req.update((parent_id, children_id))
+        ides_to_req.update(record.values())
 
     return ides_to_req, ides
 
 
-async def build_tree_json(ans, data: list[Record], tree: dict[str: dict]):
+async def build_tree_json(ans: dict, data: list[Record], records: dict[str: dict]) -> None:
+    """
+    :param ans: Словарь-ответ
+    :param data: список рекордов для построения дерева (таблица связей)
+    :param records: словарь id: record для удобства
+    :return: None
+
+    Функция построения базового дерева ответа
+    """
+
     while data:
 
-        flag = True
+        # костыль во избежание зацикливания
+        # если среди дочерних элементов текущего нет не одного из data
+        # мы прерываем цикл
+        any_children_in_data = True
 
         for index, record in enumerate(data):
             parent_id, children_id = record.get('relation_id'), record.get('children_id')
             if parent_id != ans['shop_unit_id']:
                 continue
 
-            flag = False
+            any_children_in_data = False
             data.pop(index)
+
             if ans.get('children') is None:
                 ans['children'] = []
-            ans['children'].append(tree[children_id])
-            await build_tree_json(ans['children'][-1], data, tree)
+            ans['children'].append(records[children_id])
 
-        if flag:
+            await build_tree_json(ans['children'][-1], data, records)
+
+        if any_children_in_data:
             break
 
 
-async def get_total_price(tree):
+async def get_total_price(tree: dict) -> tuple[int, int] | None:
+    """
+    :param tree: дерево элементов
+    :return: либо цену и кол-во дочерних элементов (для рекурсии), либо None
+
+    Функция, считающая и добавляющая цены категории
+    """
+
     price = tree.get('price') or 0
     count = 0
 
@@ -166,19 +190,27 @@ async def get_total_price(tree):
 
 
 async def edit_json_to_answer(data: dict | list) -> dict:
+    """
+    :param data: данные для запросов
+    :return: данные, подготовленные для отправки
+
+    Функция изменения данных для ответа
+    """
     return json.loads(
         json.dumps(data, ensure_ascii=False).replace('category', 'CATEGORY').replace('offer', 'OFFER')
         .replace('shop_unit_id', 'id').replace('parent_id', 'parentId')
     )
 
 
-async def get_update_rows_request(data: dict):
-    return '\n'.join(
-        {SQL_REQUESTS['update_shop_unit'].format(**value) for value in data.values()}
-    ).replace('None', 'null').replace("'None'", 'null')
+async def get_obj_tree_by_id(shop_unit_id: str, pg: PG) -> dict:
+    """
+    :param shop_unit_id: id элемента, для которого надо создать дерево
+    :param pg: PG объект коннекта к базе данных
+    :return: json, готовый к отправке на клиент
 
+    Функция, возвращающая json, готовый к отправке на клиент
+    """
 
-async def get_obj_tree_by_id(shop_unit_id: str, pg) -> dict:
     ides_to_req, ides = await get_item_tree(shop_unit_id, pg)
     if not ides_to_req:
         raise HTTPNotFound()
@@ -195,7 +227,17 @@ async def get_obj_tree_by_id(shop_unit_id: str, pg) -> dict:
     return await edit_json_to_answer(ans)
 
 
-async def get_history(obj_tree, update_date, ides, data: dict):
+async def get_history(obj_tree: dict, update_date: datetime, ides: list, data: dict):
+    """
+    :param obj_tree: дерево элементов, для которых необходимо получить историю
+    :param update_date: время обновления
+    :param ides: список айдишников для запроса
+    :param data: словарь историй
+    :return: None
+
+    Функция, которая рекурсивно собирает историю
+    """
+
     record = ides.pop(0)
     parent_id, children_id = record.get('relation_id'), record.get('children_id')
     data[parent_id] = {
@@ -215,11 +257,26 @@ async def get_history(obj_tree, update_date, ides, data: dict):
             await get_history(children, update_date, ides, data)
 
 
-async def get_parent_brunch_ides(children_id, pg):
+async def get_parent_brunch_ides(children_id: str, pg: PG) -> list[Record]:
+    """
+    :param children_id: id дочернего элемента в ветке
+    :param pg: PG объект коннекта к базе данных
+    :return: список рекордов
+
+    Функция, возвращающая объекты из всей родительской ветки
+    """
+
     return await pg.fetch(SQL_REQUESTS['get_parent_brunch'].format(children_id))
 
 
-def get_history_table_chunk(prices: dict):
+def get_history_table_chunk(prices: dict) -> None:
+    """
+    :param prices: Словарь со входными данными
+    :return: None
+
+    Функция генерации данных для записи в таблицу историй
+    """
+
     for obj_id, obj_data in prices.items():
         yield {
             'shop_unit_id': obj_id,
@@ -228,7 +285,17 @@ def get_history_table_chunk(prices: dict):
         }
 
 
-async def add_history(children_id, pg, update_date, main_parents_trees):
+async def add_history(children_id: str, pg: PG, update_date: datetime, main_parents_trees: dict) -> None:
+    """
+    :param children_id: id дочернего элемента в ветке
+    :param pg: PG объект коннекта к базе данных
+    :param update_date: время обновления
+    :param main_parents_trees: словарь, чтобы не запрашивать историю и дерево объекта несколько раз
+    :return: None
+    
+    Функция вычисления и добавления истории объекту
+    """
+
     ides = await get_parent_brunch_ides(children_id, pg)
     main_parent_id = ides and ides[-1].get('relation_id')
 
@@ -250,7 +317,16 @@ async def add_history(children_id, pg, update_date, main_parents_trees):
             await pg.execute(sql_request.values(chunk))
 
 
-async def update_parent_branch_date(children_id, pg: PG, update_date):
+async def update_parent_branch_date(children_id: str, pg: PG, update_date: datetime) -> None:
+    """
+    :param children_id: id дочернего элемента в ветке
+    :param pg: PG объект коннекта к базе данных
+    :param update_date: время обновления
+    :return: None
+
+    Функция обновляет дату во всей родительской ветке
+    """
+
     ides = await get_parent_brunch_ides(children_id, pg)
     ides_to_req = set()
 
@@ -259,12 +335,25 @@ async def update_parent_branch_date(children_id, pg: PG, update_date):
 
     sql_request = SQL_REQUESTS['update_date'].format(update_date, tuple(ides_to_req))
     await pg.execute(sql_request)
-    return ides[-1].get('relation_id')
 
 
 def datetime_to_str(date: datetime) -> str:
+    """
+    :param date: datetime объект
+    :return: дата и время строкой
+
+    Функция перевода datetime объект в строку
+    """
+
     return date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-4] + 'Z'
 
 
 def str_to_datetime(date: str) -> datetime:
+    """
+    :param date: дата и время строкой
+    :return: datetime объект
+
+    Функция перевода строки в datetime объект
+    """
+
     return datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")

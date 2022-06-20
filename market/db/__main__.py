@@ -3,8 +3,6 @@ from pathlib import Path
 
 from alembic.config import CommandLine, Config
 
-from market.utils.pg import make_alembic_config
-
 PROJECT_PATH = Path(__file__).parent.parent.resolve()
 
 

@@ -1,18 +1,16 @@
-import logging
 import os
 from sys import argv
 
-from aiohttp import web
 from aiohttp.web import run_app
 from aiomisc import bind_socket
-from configargparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from yarl import URL
 from aiomisc.log import basic_config, LogFormat
+from configargparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from setproctitle import setproctitle
+from yarl import URL
 
 from api.app import create_app, MAX_REQUEST_SIZE
 from market.utils.argparse import clear_environ, positive_int
 from utils.pg import DEFAULT_PG_URL
-from setproctitle import setproctitle
 
 ENV_VAR_PREFIX = 'MARKET_'
 
@@ -76,7 +74,7 @@ def main():
     #     os.setgid(args.pg_user.pw_gid)
     #     os.setuid(args.pg_user.pw_uid)
 
-        # В списке процессов намного удобнее видеть название текущего приложения
+    # В списке процессов намного удобнее видеть название текущего приложения
     setproctitle(os.path.basename(argv[0]))
 
     app = create_app(args)

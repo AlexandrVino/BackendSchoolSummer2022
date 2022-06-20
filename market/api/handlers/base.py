@@ -1,16 +1,18 @@
 import logging
 
-from aiohttp.web_exceptions import HTTPNotFound
 from aiohttp.web_urldispatcher import View
 from asyncpgsa import PG
 
-from api.schema import build_tree_json, edit_json_to_answer, get_item_tree, get_obj_tree_by_id, get_total_price, \
-    SQL_REQUESTS
+from api.schema import get_obj_tree_by_id
 
 log = logging.getLogger(__name__)
 
 
 class BaseView(View):
+    """
+    Базовый класс обработчика запросов
+    """
+
     URL_PATH: str
 
     @property
@@ -23,13 +25,17 @@ class BaseView(View):
 
 
 class BaseImportView(BaseView):
+    """
+    Базовый класс обработчика запросов с параметром-id в url
+    """
+
     @property
-    def shop_unit_id(self):
+    def shop_unit_id(self) -> str:
         return str(self.request.match_info.get('shop_unit_id'))
 
-    async def get_obj_tree(self):
+    async def get_obj_tree(self) -> dict:
         """
-        :return:
+        :return: dict - дерево, в котором текущий является корнем
         """
 
         return await get_obj_tree_by_id(self.shop_unit_id, self.pg)

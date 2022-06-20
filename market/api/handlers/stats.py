@@ -2,7 +2,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from aiohttp.web_exceptions import HTTPNotFound
 from aiohttp.web_response import Response
-from aiohttp_apispec import docs, request_schema, response_schema
+from aiohttp_apispec import docs
 from sqlalchemy import and_, select
 
 from db.schema import history_table, shop_units_table
@@ -14,7 +14,12 @@ class StatsView(BaseImportView):
     URL_PATH = r'/node/{shop_unit_id:[\w, -]+}/statistic'
 
     @docs(summary='Отобразить историю изменения товара')
-    async def get(self):
+    async def get(self) -> Response:
+        """
+        :return: Response
+        Метод получения истории изменений элемента, цена которых менялась с date_start до date_end
+        """
+
         # парсим url
         kwargs = parse_qs(urlparse(unquote(str(self.request.url))).query)
 

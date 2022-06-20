@@ -1,5 +1,5 @@
 # encoding=utf8
-
+import datetime
 import json
 import re
 import subprocess
@@ -283,22 +283,30 @@ def print_diff(expected, response):
 
 
 def test_import():
+
     for index, batch in enumerate(IMPORT_BATCHES):
+        start = datetime.datetime.now()
         print(f"Importing batch {index}")
         status, _ = request("/imports", method="POST", data=batch)
 
         assert status == 200, f"Expected HTTP status code 200, got {status}"
+        print(f"Import {index} request time: %s" % (datetime.datetime.now() - start))
+        print()
 
     for index, batch in enumerate(INCORRECT_IMPORT_BATCHES):
+        start = datetime.datetime.now()
         print(f"Incorrect importing batch {index}")
         status, _ = request("/imports", method="POST", data=batch)
 
         assert status == 400, f"Expected HTTP status code 400, got {status}"
+        print(f"Import {index} request time: %s" % (datetime.datetime.now() - start))
+        print()
 
     print("Test import passed.")
 
 
 def test_nodes():
+    start = datetime.datetime.now()
     status, response = request(f"/nodes/{ROOT_ID}", json_response=True)
     # print(json.dumps(response, indent=2, ensure_ascii=False))
 
@@ -311,9 +319,14 @@ def test_nodes():
         print("Response tree doesn't match expected tree.")
         sys.exit(1)
 
+    print("Nodes sucsess request time: %s" % (datetime.datetime.now() - start))
+
+    start = datetime.datetime.now()
     # мой тест на заведомо неверный id
     status, response = request("/nodes/bla_bla_bla", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"
+    print("Nodes sucsess request time: %s" % (datetime.datetime.now() - start))
+    print()
 
     print("Test nodes passed.")
 
@@ -366,11 +379,25 @@ def test_delete():
 
 
 def test_all():
-    test_delete()
+    start = datetime.datetime.now()
+    # test_delete()
+    print("Delete request time: %s" % (datetime.datetime.now() - start))
+    print()
+    print()
     test_import()
+    print()
+    print()
     test_nodes()
+    print()
+    print()
+    start = datetime.datetime.now()
     test_sales()
+    print("Sales request time: %s" % (datetime.datetime.now() - start))
+    print()
+    print()
+    start = datetime.datetime.now()
     test_stats()
+    print("Stats request time: %s" % (datetime.datetime.now() - start))
 
 
 def main():
