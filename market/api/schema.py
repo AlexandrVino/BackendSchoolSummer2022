@@ -215,7 +215,7 @@ async def get_total_price(tree):
     return price, count or 1
 
 
-async def edit_json_to_answer(data: dict) -> dict:
+async def edit_json_to_answer(data: dict | list) -> dict:
     return json.loads(
         json.dumps(data, ensure_ascii=False).replace('category', 'CATEGORY').replace('offer', 'OFFER')
         .replace('shop_unit_id', 'id').replace('parent_id', 'parentId')
@@ -278,23 +278,26 @@ def get_history_table_chunk(prices: dict):
         }
 
 
-async def add_history(children_id, pg, update_date):
-    prices = {}
-
+async def add_history(children_id, pg, update_date, main_parents_trees):
     ides = await get_parent_brunch_ides(children_id, pg)
-    main_parent_tree = await get_obj_tree_by_id(ides and ides[-1].get('relation_id') or children_id, pg)
-    await get_history(main_parent_tree, update_date, ides[::-1], prices)
+    main_parent_id = ides and ides[-1].get('relation_id')
 
-    sql_request = insert(history_table).on_conflict_do_update(
-        index_elements=['shop_unit_id', 'update_date', 'price'],
-        set_=history_table.columns
-    )
+    if main_parents_trees.get(main_parent_id) is None:
+        prices = {}
 
-    sql_request.parameters = []
+        main_parent_tree = await get_obj_tree_by_id(main_parent_id or children_id, pg)
+        await get_history(main_parent_tree, update_date, ides[::-1], prices)
 
-    history_rows = list(chunk_list(get_history_table_chunk(prices), MAX_QUERY_ARGS // 3))
-    for chunk in history_rows:
-        await pg.execute(sql_request.values(chunk))
+        main_parents_trees[main_parent_id] = [main_parent_tree, prices]
+
+        sql_request = insert(history_table).on_conflict_do_update(
+            index_elements=['shop_unit_id', 'update_date', 'price'], set_=history_table.columns
+        )
+        sql_request.parameters = []
+
+        history_rows = list(chunk_list(get_history_table_chunk(prices), MAX_QUERY_ARGS // 3))
+        for chunk in history_rows:
+            await pg.execute(sql_request.values(chunk))
 
 
 async def update_parent_branch_date(children_id, pg: PG, update_date):
@@ -306,6 +309,7 @@ async def update_parent_branch_date(children_id, pg: PG, update_date):
 
     sql_request = SQL_REQUESTS['update_date'].format(update_date, tuple(ides_to_req))
     await pg.execute(sql_request)
+    return ides[-1].get('relation_id')
 
 
 def datetime_to_str(date: datetime) -> str:

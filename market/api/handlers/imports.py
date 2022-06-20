@@ -148,13 +148,12 @@ class ImportsView(BaseView):
 
             for chunk in chunked_shop_unit_rows:
                 await self.update_or_create(conn, chunk)
-
             for chunk in relations_rows:
                 await self.add_relatives(conn, chunk)
 
         for children_id, date in self.need_to_update_date:
             await update_parent_branch_date(children_id, self.pg, date)
         for children_id, date in self.need_to_add_history:
-            await add_history(children_id, self.pg, date)
+            await add_history(children_id, self.pg, date, {})
 
         return Response(status=HTTPStatus.OK)

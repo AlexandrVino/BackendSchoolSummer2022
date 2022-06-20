@@ -6,7 +6,7 @@ from aiohttp_apispec import docs, response_schema
 from sqlalchemy import and_, select
 
 from db.schema import history_table, shop_units_table
-from market.api.schema import datetime_to_str, ShopUnitResponseSchema, str_to_datetime
+from market.api.schema import datetime_to_str, edit_json_to_answer, ShopUnitResponseSchema, str_to_datetime
 from .base import BaseImportView
 
 
@@ -31,5 +31,4 @@ class SalesView(BaseImportView):
         data = list(map(dict, await self.pg.fetch(sql_request)))
         for record in data:
             record['date'] = datetime_to_str(record['date'])
-
-        return Response(body={'sales': data})
+        return Response(body={'sales': await edit_json_to_answer(data)})

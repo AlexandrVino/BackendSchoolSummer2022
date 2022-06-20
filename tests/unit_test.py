@@ -170,29 +170,42 @@ EXPECTED_TREE = {
 SALES_EXAMPLE = {
     'sales': [
         {
-            'shop_unit_id': '74b81fda-9cdc-4b63-8927-c978afed5cf4',
+            'id': '98883e8f-0507-482f-bce2-2fb306cf6483',
+            'name': 'Samson 70" LED UHD Smart',
+            'date': '2022-02-03T12:00:00.000Z',
+            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'OFFER',
+            'price': 32999
+        },
+        {
+            'id': '74b81fda-9cdc-4b63-8927-c978afed5cf4',
             'name': 'Phyllis 50" LED UHD Smarter',
             'date': '2022-02-03T12:00:00.000Z',
-            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'offer',
+            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'OFFER',
             'price': 49999
         },
         {
-            'shop_unit_id': '73bc3b36-02d1-4245-ab35-3106c9ee1c65',
+            'id': '73bc3b36-02d1-4245-ab35-3106c9ee1c65',
             'name': 'Goldstar 65" LED UHD LOL Very Smart',
             'date': '2022-02-03T15:00:00.000Z',
-            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'offer',
+            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'OFFER',
             'price': 69999
-        },
-        {
-            'shop_unit_id': '98883e8f-0507-482f-bce2-2fb306cf6483',
-            'name': 'Samson 70" LED UHD Smart',
-            'date': '2022-02-03T12:00:00.000Z',
-            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'offer',
-            'price': 32999
         }
+    ]
+}
+
+STATS_EXAMPLE = {
+    'id': '069cb8d7-bbdd-47d3-ad8f-82ef4c269df1',
+    'name': 'Товары',
+    'parentId': None,
+    'type': 'CATEGORY',
+    'price': 58599,
+    'stats': [
+        {'update_date': '2022-02-02T12:00:00.000Z', 'price': 69999},
+        {'update_date': '2022-02-03T12:00:00.000Z', 'price': 55749},
+        {'update_date': '2022-02-03T15:00:00.000Z', 'price': 58599}
     ]
 }
 
@@ -275,19 +288,28 @@ def test_sales():
     })
     status, response = request(f"/sales?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
-    print(response)
+
+    if response != SALES_EXAMPLE:
+        print_diff(SALES_EXAMPLE, response)
+        print("Response tree doesn't match expected tree.")
+        sys.exit(1)
+
     print("Test sales passed.")
 
 
 def test_stats():
     params = urllib.parse.urlencode({
         "dateStart": "2022-02-01T00:00:00.000Z",
-        "dateEnd": "2022-02-03T00:00:00.000Z"
+        "dateEnd": "2022-02-04T00:00:00.000Z"
     })
-    status, response = request(
-        f"/node/{ROOT_ID}/statistic?{params}", json_response=True)
-
+    status, response = request(f"/node/{ROOT_ID}/statistic?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    if response != STATS_EXAMPLE:
+        print_diff(STATS_EXAMPLE, response)
+        print("Response tree doesn't match expected tree.")
+        sys.exit(1)
+
     print("Test stats passed.")
 
 
@@ -302,9 +324,9 @@ def test_delete():
 
 
 def test_all():
-    test_delete()
-    test_import()
-    test_nodes()
+    # test_delete()
+    # test_import()
+    # test_nodes()
     test_sales()
     test_stats()
 

@@ -5,11 +5,9 @@ from typing import AsyncIterable, Mapping
 
 from aiohttp import PAYLOAD_REGISTRY
 from aiohttp.web_app import Application
-from aiohttp_apispec import validation_middleware
 from configargparse import Namespace
 
 from api.handlers import HANDLERS
-from api.middleware import error_middleware
 from api.payloads import AsyncGenJSONListPayload, JsonPayload
 from market.utils.pg import setup_pg
 
