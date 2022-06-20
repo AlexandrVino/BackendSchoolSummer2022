@@ -167,6 +167,35 @@ EXPECTED_TREE = {
     ]
 }
 
+SALES_EXAMPLE = {
+    'sales': [
+        {
+            'shop_unit_id': '74b81fda-9cdc-4b63-8927-c978afed5cf4',
+            'name': 'Phyllis 50" LED UHD Smarter',
+            'date': '2022-02-03T12:00:00.000Z',
+            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'offer',
+            'price': 49999
+        },
+        {
+            'shop_unit_id': '73bc3b36-02d1-4245-ab35-3106c9ee1c65',
+            'name': 'Goldstar 65" LED UHD LOL Very Smart',
+            'date': '2022-02-03T15:00:00.000Z',
+            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'offer',
+            'price': 69999
+        },
+        {
+            'shop_unit_id': '98883e8f-0507-482f-bce2-2fb306cf6483',
+            'name': 'Samson 70" LED UHD Smart',
+            'date': '2022-02-03T12:00:00.000Z',
+            'parent_id': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+            'type': 'offer',
+            'price': 32999
+        }
+    ]
+}
+
 
 def request(path, method="GET", data=None, json_response=False):
     try:
@@ -246,6 +275,7 @@ def test_sales():
     })
     status, response = request(f"/sales?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+    print(response)
     print("Test sales passed.")
 
 
@@ -275,8 +305,8 @@ def test_all():
     test_delete()
     test_import()
     test_nodes()
-    # test_sales()
-    # test_stats()
+    test_sales()
+    test_stats()
 
 
 def main():

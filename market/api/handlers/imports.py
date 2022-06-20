@@ -11,6 +11,7 @@ from sqlalchemy import case, select, Table, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import Insert
+from sqlalchemy.dialects.postgresql import insert
 
 from market.api.schema import add_history, get_update_rows_request, ImportResponseSchema, ImportSchema, SQL_REQUESTS, \
     str_to_datetime, \
@@ -82,12 +83,12 @@ class ImportsView(BaseView):
         """
 
         parents = set()
-        all_objects = set()
+        all_objects = dict()
 
         for data in chunk:
             if data.get('parent_id'):
                 parents.add(data.get('parent_id'))
-            all_objects.add(data.get('shop_unit_id'))
+            all_objects[data.get('shop_unit_id')] = data.copy()
 
         # проверяем, что родитель есть в бд и что его тип == 'category'
         if parents:
@@ -96,14 +97,6 @@ class ImportsView(BaseView):
                 for record in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(parents)).replace(',)', ')'))
             }
             assert all(parents), 'Validation failed'
-
-        # объекты, которые уже есть в бд, надо обновить, другие - добавить
-        nullable_objects = []
-        exist_objects = {
-            record.get('shop_unit_id'): dict(record)
-            for record in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(all_objects)).replace(',)', ')'))
-            if record
-        }
 
         for data in chunk:
 
@@ -117,23 +110,14 @@ class ImportsView(BaseView):
             if data.get('type').lower() == 'offer':
                 self.need_to_add_history.append((data['shop_unit_id'], data['date']))
 
-            if exist_objects.get(data.get('shop_unit_id')) is None:
-                nullable_objects.append(data)
-            else:
-                exist_objects[data.get('shop_unit_id')] = data
-
         # добавляем объекты, которых еще нет в бд
+        insert_query = insert(shop_units_table).values(list(all_objects.values())).on_conflict_do_update(
+            index_elements=['shop_unit_id'],
+            set_=shop_units_table.columns
+        )
+        insert_query.parameters = []
 
-        update_query = await get_update_rows_request(exist_objects)
-
-        if nullable_objects:
-            insert_query = shop_units_table.insert(values=nullable_objects)
-            insert_query.parameters = []
-
-            await conn.execute(insert_query)
-
-        if update_query:
-            await conn.execute(update_query)
+        await conn.execute(insert_query)
 
     @docs(summary='Добавить выгрузку с информацией о товарах/категориях')
     @request_schema(ImportSchema())

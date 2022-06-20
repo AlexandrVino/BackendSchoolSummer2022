@@ -11,11 +11,16 @@ import json
 from datetime import datetime
 
 from aiohttp.web_exceptions import HTTPNotFound
+from aiomisc import chunk_list
 from asyncpg import Record
 from asyncpgsa import PG
 from marshmallow import Schema, validates_schema, ValidationError
 from marshmallow.fields import Dict, Int, Nested, Str
 from marshmallow.validate import Length, Range
+from sqlalchemy.dialects.postgresql import insert
+
+from db.schema import history_table, shop_units_table
+from utils.pg import MAX_QUERY_ARGS
 
 BIRTH_DATE_FORMAT = '%d.%m.%Y'
 
@@ -228,8 +233,7 @@ async def get_obj_tree_by_id(shop_unit_id: str, pg) -> dict:
     if not ides_to_req:
         raise HTTPNotFound()
 
-    sql_request = SQL_REQUESTS['get_by_ides'].format(tuple(ides_to_req))
-
+    sql_request = SQL_REQUESTS['get_by_ides'].format(tuple(ides_to_req)).replace(',)', ')')
     records = await pg.fetch(sql_request)
     records = {record.get('shop_unit_id'): dict(record) for record in records}
     ans = records.get(shop_unit_id)
@@ -265,18 +269,32 @@ async def get_parent_brunch_ides(children_id, pg):
     return await pg.fetch(SQL_REQUESTS['get_parent_brunch'].format(children_id))
 
 
+def get_history_table_chunk(prices: dict):
+    for obj_id, obj_data in prices.items():
+        yield {
+            'shop_unit_id': obj_id,
+            'update_date': obj_data.get('date'),
+            'price': obj_data.get('price'),
+        }
+
+
 async def add_history(children_id, pg, update_date):
     prices = {}
 
     ides = await get_parent_brunch_ides(children_id, pg)
     main_parent_tree = await get_obj_tree_by_id(ides and ides[-1].get('relation_id') or children_id, pg)
-
     await get_history(main_parent_tree, update_date, ides[::-1], prices)
-    await pg.execute('\n'.join(
-        {
-            SQL_REQUESTS['add_history'].format(obj_id, obj_data.get('date'), obj_data.get('price'))
-            for obj_id, obj_data in prices.items()}
-    ))
+
+    sql_request = insert(history_table).on_conflict_do_update(
+        index_elements=['shop_unit_id', 'update_date', 'price'],
+        set_=history_table.columns
+    )
+
+    sql_request.parameters = []
+
+    history_rows = list(chunk_list(get_history_table_chunk(prices), MAX_QUERY_ARGS // 3))
+    for chunk in history_rows:
+        await pg.execute(sql_request.values(chunk))
 
 
 async def update_parent_branch_date(children_id, pg: PG, update_date):
