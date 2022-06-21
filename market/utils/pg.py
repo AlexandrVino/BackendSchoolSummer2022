@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from re import match
@@ -6,10 +7,19 @@ from re import match
 from aiohttp.web_app import Application
 from asyncpgsa import PG
 from configargparse import Namespace
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
+dotenv_path = os.path.join('.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+
 CENSORED = '***'
-DEFAULT_PG_URL = create_engine('postgresql://postgres:postgres@database:5432/MarketDB')
+
+DEFAULT_PG_URL = create_engine(
+    f'postgresql://{os.environ.get("POSTGRES_USER")}:'
+    f'{os.environ.get("POSTGRES_PASSWORD")}@database:{os.environ.get("POSTGRES_PORT")}/{os.environ.get("POSTGRES_DB")}'
+)
 
 MAX_QUERY_ARGS = 32767
 MAX_INTEGER = 2147483647

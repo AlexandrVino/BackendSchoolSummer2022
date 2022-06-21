@@ -10,8 +10,6 @@ def main():
     alembic = CommandLine()
     options = alembic.parser.parse_args()
 
-    print(options)
-
     # Если указан относительный путь (alembic.ini), добавляем в начало
     # абсолютный путь до приложения
     if not os.path.isabs(options.config):
