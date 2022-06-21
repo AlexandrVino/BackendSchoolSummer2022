@@ -40,8 +40,6 @@ class DataBaseData:
         database = url_split[1]
         host, port = url_split[0].split(':')
 
-        print(locals())
-
         return DataBaseData(host=host, port=port, user=user, password=password, database=database)
 
     def __str__(self):
