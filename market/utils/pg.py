@@ -7,10 +7,15 @@ from re import match
 from aiohttp.web_app import Application
 from asyncpgsa import PG
 from configargparse import Namespace
-import config as load_env
+from dotenv import load_dotenv
+
 from sqlalchemy import create_engine
 
 CENSORED = '***'
+
+dotenv_path = os.path.join('.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
 
 DEFAULT_PG_URL = create_engine(
     f'postgresql://{os.environ.get("POSTGRES_USER")}:'

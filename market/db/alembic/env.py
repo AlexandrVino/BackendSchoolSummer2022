@@ -10,7 +10,6 @@ from alembic import context
 from market.db import schema
 
 from dotenv import load_dotenv
-import config as load_env
 
 
 dotenv_path = os.path.join('.env')
