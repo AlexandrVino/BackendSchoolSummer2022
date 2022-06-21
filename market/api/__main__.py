@@ -27,7 +27,7 @@ parser.add_argument(
     help='IPv4/IPv6 address API server would listen on'
 )
 parser.add_argument(
-    '--api-port', type=positive_int, default=8081,
+    '--api-port', type=positive_int, default=80,
     help='TCP port API server would listen on'
 )
 
