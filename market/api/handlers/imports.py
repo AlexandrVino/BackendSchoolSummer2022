@@ -170,5 +170,5 @@ class ImportsView(BaseView):
                 await add_history(children_id, self.pg, date, {})
 
             return Response(status=HTTPStatus.OK)
-        except AssertionError:
+        except (AssertionError, ValueError):
             return Response(status=HTTPStatus.BAD_REQUEST)

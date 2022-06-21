@@ -1,5 +1,6 @@
 import os
-from sys import argv
+import os.path
+from sys import argv, path
 
 from market.api.app import create_app, MAX_REQUEST_SIZE
 from market.utils.argparse import clear_environ, positive_int

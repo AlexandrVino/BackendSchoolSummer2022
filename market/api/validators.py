@@ -25,6 +25,8 @@ def validate_product(kwargs):
         ('shop_unit_id', (1,)), ('name', (1,)), ('date', (1,)), ('parentId', (0, 1)), ('type', (1,)), ('price', (1,))
     ]
     for key, value in keys:
+        if key == 'price':
+            assert kwargs.get(key) >= 0, 'Validation failed'
         assert bool(kwargs.get(key)) in value, 'Validation failed'
 
 

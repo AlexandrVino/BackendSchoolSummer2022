@@ -9,7 +9,7 @@ from configargparse import Namespace
 from sqlalchemy import create_engine
 
 CENSORED = '***'
-DEFAULT_PG_URL = create_engine('postgresql://postgres:1Ldflblfdxbrf3@localhost:5433/MarketDB')
+DEFAULT_PG_URL = create_engine('postgresql://postgres:postgres@database:5432/MarketDB')
 
 MAX_QUERY_ARGS = 32767
 MAX_INTEGER = 2147483647
@@ -39,6 +39,8 @@ class DataBaseData:
         url_split = url_split[1].split('/')
         database = url_split[1]
         host, port = url_split[0].split(':')
+
+        print(locals())
 
         return DataBaseData(host=host, port=port, user=user, password=password, database=database)
 

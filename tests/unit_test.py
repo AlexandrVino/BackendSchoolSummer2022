@@ -98,9 +98,32 @@ INCORRECT_IMPORT_BATCHES = [
             {
                 "type": "CATEGORY",
                 "name": "Товары",
-                "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
+                "id": "1231312-3-123-1-23-1",
                 "parentId": '863e1a7a-1304-42ae-943b-179184c077e3',
-                "children": []
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Товары",
+                "id": "313123123wadad123123",
+                "parentId": '069cb8d7-bbdd-47d3-ad8f-82ef4c269df',
+                "price": 1000
+            }
+        ],
+        "updateDate": "2adfasfsdgvbsd"
+    },
+    {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Товары",
+                "id": "313123123wdawdawdadad123123",
+                "parentId": '069cb8d7-bbdd-47d3-ad8f-82ef4c269df',
+                "price": -1007
             }
         ],
         "updateDate": "2022-02-01T12:00:00.000Z"
@@ -283,7 +306,6 @@ def print_diff(expected, response):
 
 
 def test_import():
-
     for index, batch in enumerate(IMPORT_BATCHES):
         start = datetime.datetime.now()
         print(f"Importing batch {index}")
@@ -379,11 +401,6 @@ def test_delete():
 
 
 def test_all():
-    start = datetime.datetime.now()
-    # test_delete()
-    print("Delete request time: %s" % (datetime.datetime.now() - start))
-    print()
-    print()
     test_import()
     print()
     print()
@@ -398,6 +415,11 @@ def test_all():
     start = datetime.datetime.now()
     test_stats()
     print("Stats request time: %s" % (datetime.datetime.now() - start))
+    print()
+    print()
+    start = datetime.datetime.now()
+    test_delete()
+    print("Delete request time: %s" % (datetime.datetime.now() - start))
 
 
 def main():

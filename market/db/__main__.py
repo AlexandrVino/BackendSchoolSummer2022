@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from time import sleep
 
 from alembic.config import CommandLine, Config
 
@@ -7,6 +8,7 @@ PROJECT_PATH = Path(__file__).parent.parent.resolve()
 
 
 def main():
+    sleep(5)
     alembic = CommandLine()
     options = alembic.parser.parse_args()
     # Если указан относительный путь (alembic.ini), добавляем в начало

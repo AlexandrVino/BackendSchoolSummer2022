@@ -301,7 +301,6 @@ async def add_history(children_id: str, pg: PG, update_date: datetime, main_pare
 
     if main_parents_trees.get(main_parent_id) is None:
         prices = {}
-
         main_parent_tree = await get_obj_tree_by_id(main_parent_id or children_id, pg)
         await get_history(main_parent_tree, update_date, ides[::-1], prices)
 
