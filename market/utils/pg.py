@@ -7,12 +7,8 @@ from re import match
 from aiohttp.web_app import Application
 from asyncpgsa import PG
 from configargparse import Namespace
-from dotenv import load_dotenv
+import config as load_env
 from sqlalchemy import create_engine
-
-dotenv_path = os.path.join('.env')
-if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path)
 
 CENSORED = '***'
 

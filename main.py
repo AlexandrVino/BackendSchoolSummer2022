@@ -1,5 +1,6 @@
 import os
 from time import sleep
+import config
 
 from market.api.__main__ import main
 
