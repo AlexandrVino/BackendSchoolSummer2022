@@ -7,8 +7,8 @@ from asyncpg import Record
 from asyncpgsa import PG
 from sqlalchemy.dialects.postgresql import insert
 
-from db.schema import history_table
-from utils.pg import MAX_QUERY_ARGS
+from market.db.schema import history_table
+from market.utils.pg import MAX_QUERY_ARGS
 
 ''' 
 Пишу ручками некоторые запросы т.к. 
