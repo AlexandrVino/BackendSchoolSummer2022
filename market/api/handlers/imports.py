@@ -5,14 +5,15 @@ from typing import Generator
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, request_schema
 from aiomisc import chunk_list
-from asyncpg import Connection, UniqueViolationError
+from asyncpg import Connection
 from sqlalchemy.dialects.postgresql import insert
 
-from market.api.schema import add_history, ImportSchema, SQL_REQUESTS, str_to_datetime, update_parent_branch_date
+from market.api.handlers.base import BaseView
+from market.api.schema import ImportSchema
+from market.api.utils import add_history, SQL_REQUESTS, str_to_datetime, update_parent_branch_date
+from market.api.validators import validate_all_items
 from market.db.schema import relations_table, shop_units_table
 from market.utils.pg import MAX_QUERY_ARGS
-from market.api.handlers.base import BaseView
-from market.api.validators import validate_all_items
 
 log = logging.getLogger(__name__)
 
@@ -102,11 +103,9 @@ class ImportsView(BaseView):
 
         # проверяем, что родитель есть в бд и что его тип == 'category'
         if parents:
-            parents = {
-                record is not None and record.get('type').lower() == 'category'
-                for record in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(parents)).replace(',)', ')'))
-            }
-            assert all(parents), 'Validation failed'
+            for parent in await self.pg.fetch(SQL_REQUESTS['get_by_ides'].format(tuple(parents)).replace(',)', ')')):
+                assert parent is not None and parent.get('type').lower() == 'category', \
+                    f'Incorrect parent with id {parent.get("shop_unit_id")} (Not found in db or type is OFFER)'
 
         for data in chunk:
 
@@ -170,5 +169,5 @@ class ImportsView(BaseView):
                 await add_history(children_id, self.pg, date, {})
 
             return Response(status=HTTPStatus.OK)
-        except (AssertionError, ValueError):
-            return Response(status=HTTPStatus.BAD_REQUEST)
+        except (AssertionError, ValueError) as err:
+            return Response(body=str(err), status=HTTPStatus.BAD_REQUEST)

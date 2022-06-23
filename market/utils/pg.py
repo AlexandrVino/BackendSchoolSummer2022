@@ -18,8 +18,8 @@ if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 
 DEFAULT_PG_URL = create_engine(
-    f'postgresql://{os.environ.get("POSTGRES_USER")}:'
-    f'{os.environ.get("POSTGRES_PASSWORD")}@database:{os.environ.get("POSTGRES_PORT")}/{os.environ.get("POSTGRES_DB")}'
+    f'postgresql://{os.environ.get("POSTGRES_USER")}:{os.environ.get("POSTGRES_PASSWORD")}@'
+    f'{os.environ.get("POSTGRES_HOST")}:{os.environ.get("POSTGRES_PORT")}/{os.environ.get("POSTGRES_DB")}'
 )
 
 MAX_QUERY_ARGS = 32767

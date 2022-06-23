@@ -206,34 +206,32 @@ EXPECTED_TREE = {
     ]
 }
 
-SALES_EXAMPLE = {
-    'sales': [
-        {
-            'id': '98883e8f-0507-482f-bce2-2fb306cf6483',
-            'name': 'Samson 70" LED UHD Smart',
-            'date': '2022-02-03T12:00:00.000Z',
-            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'OFFER',
-            'price': 32999
-        },
-        {
-            'id': '74b81fda-9cdc-4b63-8927-c978afed5cf4',
-            'name': 'Phyllis 50" LED UHD Smarter',
-            'date': '2022-02-03T12:00:00.000Z',
-            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'OFFER',
-            'price': 49999
-        },
-        {
-            'id': '73bc3b36-02d1-4245-ab35-3106c9ee1c65',
-            'name': 'Goldstar 65" LED UHD LOL Very Smart',
-            'date': '2022-02-03T15:00:00.000Z',
-            'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
-            'type': 'OFFER',
-            'price': 69999
-        }
-    ]
-}
+SALES_EXAMPLE = [
+    {
+        'id': '98883e8f-0507-482f-bce2-2fb306cf6483',
+        'name': 'Samson 70" LED UHD Smart',
+        'date': '2022-02-03T12:00:00.000Z',
+        'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+        'type': 'OFFER',
+        'price': 32999
+    },
+    {
+        'id': '74b81fda-9cdc-4b63-8927-c978afed5cf4',
+        'name': 'Phyllis 50" LED UHD Smarter',
+        'date': '2022-02-03T12:00:00.000Z',
+        'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+        'type': 'OFFER',
+        'price': 49999
+    },
+    {
+        'id': '73bc3b36-02d1-4245-ab35-3106c9ee1c65',
+        'name': 'Goldstar 65" LED UHD LOL Very Smart',
+        'date': '2022-02-03T15:00:00.000Z',
+        'parentId': '1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2',
+        'type': 'OFFER',
+        'price': 69999
+    }
+]
 
 STATS_EXAMPLE = {
     'id': '069cb8d7-bbdd-47d3-ad8f-82ef4c269df1',
@@ -288,8 +286,7 @@ def sort_stats(node):
 
 
 def sort_sales(node):
-    if node.get("sales"):
-        node["sales"].sort(key=lambda x: x["id"])
+    node.sort(key=lambda x: x["id"])
 
 
 def print_diff(expected, response):
@@ -391,11 +388,15 @@ def test_stats():
 
 
 def test_delete():
+    start = datetime.datetime.now()
     status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+    print("Delete request time: %s" % (datetime.datetime.now() - start))
 
+    start = datetime.datetime.now()
     status, _ = request(f"/nodes/{ROOT_ID}", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"
+    print("Delete request time: %s" % (datetime.datetime.now() - start))
 
     print("Test delete passed.")
 
@@ -404,22 +405,25 @@ def test_all():
     test_import()
     print()
     print()
+
     test_nodes()
     print()
     print()
+
     start = datetime.datetime.now()
     test_sales()
     print("Sales request time: %s" % (datetime.datetime.now() - start))
     print()
     print()
+
     start = datetime.datetime.now()
     test_stats()
     print("Stats request time: %s" % (datetime.datetime.now() - start))
     print()
     print()
-    start = datetime.datetime.now()
+
     test_delete()
-    print("Delete request time: %s" % (datetime.datetime.now() - start))
+
 
 
 def main():

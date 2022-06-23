@@ -3,7 +3,7 @@ import logging
 from aiohttp.web_urldispatcher import View
 from asyncpgsa import PG
 
-from market.api.schema import get_obj_tree_by_id
+from market.api.utils import get_obj_tree_by_id
 
 log = logging.getLogger(__name__)
 

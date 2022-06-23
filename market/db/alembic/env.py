@@ -31,6 +31,7 @@ config.set_section_option(section, "DB_USER", os.environ.get("POSTGRES_USER"))
 config.set_section_option(section, "DB_PASS", os.environ.get("POSTGRES_PASSWORD"))
 config.set_section_option(section, "DB_NAME", os.environ.get("POSTGRES_DB"))
 config.set_section_option(section, "DB_PORT", os.environ.get("POSTGRES_PORT"))
+config.set_section_option(section, "DB_HOST", os.environ.get("POSTGRES_HOST"))
 
 # add your model's MetaData object here
 # for 'autogenerate' support

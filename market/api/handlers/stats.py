@@ -6,7 +6,7 @@ from aiohttp_apispec import docs
 from sqlalchemy import and_, select
 
 from market.db.schema import history_table, shop_units_table
-from market.api.schema import datetime_to_str, edit_json_to_answer, str_to_datetime
+from market.api.utils import datetime_to_str, edit_json_to_answer, str_to_datetime
 from market.api.handlers.base import BaseImportView
 
 
