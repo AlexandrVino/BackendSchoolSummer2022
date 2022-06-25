@@ -38,11 +38,9 @@ services:
       - db
     volumes:
       - db-data:/var/lib/postgresql/data
+    ports:
+      - "80:80"
 
 
 volumes:
   db-data:
-
-networks:
-  internet:
-    external: true
