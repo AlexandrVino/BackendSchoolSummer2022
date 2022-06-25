@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from urllib.parse import parse_qs, unquote, urlparse
 
 from aiohttp.web_exceptions import HTTPNotFound
@@ -23,8 +24,11 @@ class StatsView(BaseImportView):
         # парсим url
         kwargs = parse_qs(urlparse(unquote(str(self.request.url))).query)
 
-        date_end = str_to_datetime(kwargs['dateEnd'][0])
-        date_start = str_to_datetime(kwargs['dateStart'][0])
+        try:
+            date_end = str_to_datetime(kwargs['dateEnd'][0])
+            date_start = str_to_datetime(kwargs['dateStart'][0])
+        except (ValueError, KeyError):
+            return Response(status=HTTPStatus.BAD_REQUEST)
 
         # sql получения истории обновления цены товара/категории
         sql_request = select(history_table).where(

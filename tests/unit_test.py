@@ -8,6 +8,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+# API_BASEURL = "https://have-1826.usr.yandex-academy.ru"
 API_BASEURL = "http://localhost:80"
 
 ROOT_ID = "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1"
@@ -351,9 +352,9 @@ def test_nodes():
 
 
 def test_sales():
-    params = urllib.parse.urlencode({
-        "date": "2022-02-04T00:00:00.000Z"
-    })
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({"date": "2022-02-04T00:00:00.000Z"})
     status, response = request(f"/sales?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
@@ -365,13 +366,39 @@ def test_sales():
         print("Response tree doesn't match expected tree.")
         sys.exit(1)
 
+    print("Sales request time: %s" % (datetime.datetime.now() - start))
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({"date": "2022-01-04T00:00:00.000Z"})
+    status, response = request(f"/sales?{params}", json_response=True)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+    if response:
+        print_diff([], response)
+        print("Response tree doesn't match expected tree.")
+        sys.exit(1)
+
+    print("Sales request time: %s" % (datetime.datetime.now() - start))
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({"date": "2022-01-0wmsnfnT00:00:00.000Z"})
+    status, response = request(f"/sales?{params}", json_response=True)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Sales request time: %s" % (datetime.datetime.now() - start))
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({"example": "2022-01-0wmsnfnT00:00:00.000Z"})
+    status, response = request(f"/sales?{params}", json_response=True)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Sales request time: %s" % (datetime.datetime.now() - start))
     print("Test sales passed.")
 
 
 def test_stats():
+    start = datetime.datetime.now()
     params = urllib.parse.urlencode({
-        "dateStart": "2022-02-01T00:00:00.000Z",
-        "dateEnd": "2022-02-04T00:00:00.000Z"
+        "dateStart": "2022-02-01T00:00:00.000Z", "dateEnd": "2022-02-04T00:00:00.000Z"
     })
     status, response = request(f"/node/{ROOT_ID}/statistic?{params}", json_response=True)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
@@ -384,6 +411,23 @@ def test_stats():
         print("Response tree doesn't match expected tree.")
         sys.exit(1)
 
+    print("Stats request time: %s" % (datetime.datetime.now() - start))
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({
+        "dateStart": "2022-02-daada:00:00.000Z", "dateEnd": "2022-02-04T00:00:00.000Z"
+    })
+    status, response = request(f"/sales?{params}", json_response=True)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Stats request time: %s" % (datetime.datetime.now() - start))
+    start = datetime.datetime.now()
+
+    params = urllib.parse.urlencode({})
+    status, response = request(f"/sales?{params}", json_response=True)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Stats request time: %s" % (datetime.datetime.now() - start))
     print("Test stats passed.")
 
 
@@ -410,20 +454,15 @@ def test_all():
     print()
     print()
 
-    start = datetime.datetime.now()
     test_sales()
-    print("Sales request time: %s" % (datetime.datetime.now() - start))
     print()
     print()
 
-    start = datetime.datetime.now()
     test_stats()
-    print("Stats request time: %s" % (datetime.datetime.now() - start))
     print()
     print()
 
     test_delete()
-
 
 
 def main():

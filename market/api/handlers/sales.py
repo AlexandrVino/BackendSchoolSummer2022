@@ -1,4 +1,5 @@
 from datetime import timedelta
+from http import HTTPStatus
 from json import dumps
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -21,13 +22,20 @@ class SalesView(BaseImportView):
         Метод получения элемента (-ов), цена которых менялась за последние 24 часа
         """
 
-        date = str_to_datetime(parse_qs(urlparse(unquote(str(self.request.url))).query)['date'][0])
+        try:
+            date = str_to_datetime(parse_qs(urlparse(unquote(str(self.request.url))).query)['date'][0])
+        except (ValueError, KeyError):
+            return Response(status=HTTPStatus.BAD_REQUEST)
+
         sql_request = shop_units_table.select().where(
             and_(
                 shop_units_table.c.type == 'offer',
                 shop_units_table.c.shop_unit_id.in_(
                     select(history_table.c.shop_unit_id).where(
-                        history_table.c.update_date >= date - timedelta(days=1)
+                        and_(
+                            history_table.c.update_date >= date - timedelta(days=1),
+                            history_table.c.update_date <= date,
+                        )
                     )
                 )
             )
