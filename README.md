@@ -13,6 +13,8 @@
 
 # Запуск проекта (сборка) #
 
+Скопируйте репозиторий <code>git clone https://github.com/AlexandrVino/BackendSchool.git</code> 
+
 В моем решении реализованы 2-а метода запуска/сборки проекта:
 
 1. Через докер:
@@ -23,12 +25,15 @@
         2. adminer - контейнер, позволяющий работать напрямую с бд (адрес: http://localhost:8080)
         3. api-server - контейнер, который является бэкондом
     * чтобы прогнать по тестам и проверить время их выполнения, выполните:
-        1. <code>docker ps -a</code> - Выведет все активные контейнеры, среди них ищем тот, у которого image ==
-           api-server, копируем его id
-        2. <code>docker exec -ti {id контейнера} /bin/sh</code> - входим в запущенный контейнер
-        3. <code>python tests/unit_test.py</code> - команда запуска тестов (я обновил те, которые дал Яндекс)
+      * Внутри контейнера:
+          1. <code>docker ps -a</code> - Выведет все активные контейнеры, среди них ищем тот, у которого image ==
+             api-server, копируем его id
+          2. <code>docker exec -ti {id контейнера} /bin/sh</code> - входим в запущенный контейнер
+          3. <code>python tests/unit_test.py</code> - команда запуска тестов (я обновил те, которые дал Яндекс)
+      * Извне:
+         1. Выполните комманду <code>python tests/unit_test.py</code>, указав в <code>API_BASEURL = "Адрес, на котором расположен ваш сервер"</code>
 
-2. Через запуск непосредственно через python:
+3. Через запуск непосредственно через python:
     * Создаем бд (Например, через приложение [PGAdmin](https://www.pgadmin.org/))
     * Заполните <code>.env</code> файл по примеру .env.dist (данные для бд)
     * <code> python market/db/__main__.py upgrade head </code> (<code>market-db upgrade head</code> для ленивых) - применяем миграции 
