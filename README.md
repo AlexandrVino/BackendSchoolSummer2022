@@ -29,7 +29,7 @@
           1. <code>docker ps -a</code> - Выведет все активные контейнеры, среди них ищем тот, у которого image ==
              api-server, копируем его id
           2. <code>docker exec -ti {id контейнера} /bin/sh</code> - входим в запущенный контейнер
-          3. <code>python tests/unit_test.py</code> - команда запуска тестов (я обновил те, которые дал Яндекс)
+          3. <code>python tests/unit_test.py</code> - команда запуска тестов (я обновил те, которые дал Яндекс)<br>(Внимание !!! <code>API_BASEURL = "http://localhost:Порт из файла docker-compose.yml у контейнера api-server"</code>) 
       * Извне:
          1. Выполните комманду <code>python tests/unit_test.py</code>, указав в <code>API_BASEURL = "Адрес, на котором расположен ваш сервер"</code>
 
