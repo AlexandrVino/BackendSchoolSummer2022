@@ -143,6 +143,7 @@ class ImportsView(BaseView):
             async with self.pg.transaction() as conn:
 
                 data = await self.request.json()
+                assert data.get('items') and data.get('updateDate')
                 shop_units = data['items']
 
                 chunked_shop_unit_rows = list(

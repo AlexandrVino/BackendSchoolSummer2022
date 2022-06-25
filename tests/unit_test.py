@@ -129,6 +129,10 @@ INCORRECT_IMPORT_BATCHES = [
         ],
         "updateDate": "2022-02-01T12:00:00.000Z"
     },
+    {
+        "items": [],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
 ]
 
 EXPECTED_TREE = {
@@ -462,7 +466,7 @@ def test_all():
     print()
     print()
 
-    test_delete()
+    # test_delete()
 
 
 def main():
